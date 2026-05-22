@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>ToolScope: Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering</title>
+
+  <meta name="description" content="ToolScope improves LLM agent tool selection with tool merging and context-aware retrieval, achieving 8.38% to 38.6% gains in tool selection accuracy." />
+  <meta name="keywords" content="LLM agents, tool use, tool selection, tool retrieval, tool merging, context-aware filtering" />
+  <meta name="author" content="Marianne Menglin Liu, Daniel Garcia, Fjona Parllaku, Vikas Upadhyay, Syed Fahad Allam Shah, Dan Roth" />
+
+  <meta property="og:title" content="ToolScope: Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering" />
+  <meta property="og:description" content="ToolScope improves LLM agent tool selection with tool merging and context-aware retrieval." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://toolscope.github.io/" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ToolScope" />
+  <meta name="twitter:description" content="Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering" />
+
+  <meta name="citation_title" content="ToolScope: Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering" />
+  <meta name="citation_author" content="Liu, Marianne Menglin" />
+  <meta name="citation_author" content="Garcia, Daniel" />
+  <meta name="citation_author" content="Parllaku, Fjona" />
+  <meta name="citation_author" content="Upadhyay, Vikas" />
+  <meta name="citation_author" content="Shah, Syed Fahad Allam" />
+  <meta name="citation_author" content="Roth, Dan" />
+  <meta name="citation_publication_date" content="2026" />
+  <meta name="citation_conference_title" content="ACL 2026 Main" />
+  <meta name="citation_arxiv_id" content="2510.20036" />
+  <meta name="citation_pdf_url" content="https://arxiv.org/pdf/2510.20036.pdf" />
+
+  <link rel="stylesheet" href="static/css/bulma.min.css" />
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
+
+  <style>
+    :root {
+      --toolscope-blue: #3273dc;
+      --toolscope-deep: #2c3e50;
+      --toolscope-muted: #5f6b7a;
+      --toolscope-bg: #fafbfd;
+    }
+
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, var(--toolscope-bg) 60%, #ffffff 100%);
+      color: #2c3e50;
+      font-family: "Noto Sans", sans-serif;
+    }
+
+    .section {
+      padding-top: 1rem !important;
+      padding-bottom: 1rem !important;
+    }
+
+    .title,
+    .publication-title {
+      font-family: "Google Sans", sans-serif;
+    }
+
+    .header-logos {
+      padding: 1rem 0 0.4rem;
+    }
+
+    .header-logos .logos-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .header-logos img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    .header-logo {
+      height: 44px !important;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .header-separator {
+      width: 1px;
+      height: 36px;
+      background: #d5dbe5;
+    }
+
+    .publication-title {
+      color: var(--toolscope-deep);
+      line-height: 1.15;
+      font-size: clamp(1.65rem, 2.5vw, 2.2rem) !important;
+    }
+
+    .tagline {
+      margin-top: 0.75rem;
+      color: var(--toolscope-muted);
+      font-size: 1.08rem;
+    }
+
+    .publication-links .button {
+      margin: 0.2rem;
+    }
+
+    .publication-authors {
+      font-size: 1.12rem !important;
+    }
+
+    .section-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-card h2.title {
+      color: var(--toolscope-blue);
+    }
+
+    .key-result {
+      border-left: 4px solid var(--toolscope-blue);
+      padding: 0.9rem 1rem;
+      background: #eff6ff;
+      border-radius: 8px;
+      margin-top: 1rem;
+      color: #1e3a8a;
+      font-weight: 600;
+    }
+
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .method-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .method-item h4 {
+      margin-bottom: 0.4rem;
+      color: var(--toolscope-deep);
+    }
+
+    .method-subsection {
+      margin-top: 0.75rem;
+      padding: 0.85rem 0.95rem;
+      border-left: 4px solid #dbeafe;
+      background: #fbfdff;
+      border-radius: 8px;
+    }
+
+    .method-subsection h3 {
+      color: #285bb1;
+      margin-bottom: 0.55rem;
+    }
+
+    .equation-line {
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #dbe3ef;
+      border-radius: 6px;
+      background: #f8fbff;
+      font-family: "Castoro", serif;
+      overflow-x: auto;
+    }
+
+    .results-table th,
+    .results-table td {
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    footer {
+      padding: 2rem 1rem 2.5rem;
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (max-width: 768px) {
+      .header-separator {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="header-logos">
+    <div class="container is-max-desktop">
+      <div class="logos-row">
+        <img class="header-logo" src="static/images/acl-2026.png" alt="ACL 2026 San Diego" />
+        <div class="header-separator"></div>
+        <img class="header-logo" src="static/images/oracle.png" alt="Oracle AI" />
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop has-text-centered">
+        <h1 class="title is-1 publication-title">ToolScope: Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering</h1>
+        <p style="margin-top: 0.6rem; font-weight: 700; font-size: 1.25rem; color: #1e40af;">🎉 Accepted by ACL 2026 Main 🎉</p>
+
+        <div class="is-size-5 publication-authors" style="margin-top: 1.2rem;">
+          <span class="author-block"><a href="https://mariannemliu.github.io/" target="_blank" rel="noopener">Marianne Menglin Liu</a><sup>1</sup>,</span>
+          <span class="author-block"><a href="https://toolscope.github.io/" target="_blank" rel="noopener">Daniel Garcia</a><sup>1</sup>,</span>
+          <span class="author-block"><a href="https://toolscope.github.io/" target="_blank" rel="noopener">Fjona Parllaku</a><sup>1</sup>,</span>
+          <span class="author-block"><a href="https://toolscope.github.io/" target="_blank" rel="noopener">Vikas Upadhyay</a><sup>1</sup>,</span>
+          <span class="author-block"><a href="https://toolscope.github.io/" target="_blank" rel="noopener">Syed Fahad Allam Shah</a><sup>1</sup>,</span>
+          <span class="author-block"><a href="https://www.cis.upenn.edu/~danroth/" target="_blank" rel="noopener">Dan Roth</a><sup>1,2</sup></span>
+        </div>
+
+        <div class="is-size-5 publication-authors" style="margin-top: 0.5rem;">
+          <span class="author-block"><sup>1</sup>Oracle AI,&nbsp;&nbsp;<sup>2</sup>University of Pennsylvania</span>
+        </div>
+
+        <div class="publication-links" style="margin-top: 1.2rem;">
+          <a href="https://arxiv.org/pdf/2510.20036.pdf" target="_blank" rel="noopener" class="button is-dark is-rounded">
+            <span class="icon"><i class="fas fa-file-pdf"></i></span>
+            <span>Paper</span>
+          </a>
+          <a href="https://arxiv.org/abs/2510.20036" target="_blank" rel="noopener" class="button is-rounded">
+            <span class="icon"><i class="ai ai-arxiv"></i></span>
+            <span>arXiv</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="section-card content">
+        <h2 class="title is-3">Abstract</h2>
+        <p>
+          Large language model (LLM) agents rely on external tools to solve complex tasks, but real-world toolsets often contain
+          redundant tools with overlapping names and descriptions, introducing ambiguity and reducing selection accuracy.
+          LLMs also face strict input context limits, preventing efficient consideration of large toolsets.
+        </p>
+        <p>
+          ToolScope addresses these challenges with two modules: <strong>ToolScopeMerger</strong> (with Auto-Correction) to audit and fix
+          tool merges and reduce redundancy, and <strong>ToolScopeRetriever</strong> to rank and select only the most relevant tools per query,
+          compressing toolsets to fit context limits without sacrificing accuracy.
+        </p>
+        <div class="key-result">
+          Evaluated across 3 state-of-the-art LLMs and 3 open-source tool-use benchmarks, ToolScope improves tool-selection accuracy by
+          <strong>8.38% to 38.6%</strong>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="section-card content">
+        <h2 class="title is-3">Introduction</h2>
+        <p>
+          LLM agents are increasingly deployed with large external toolsets, but practical tool selection is limited by two persistent issues:
+          semantic overlap among tools and strict context-window budgets. Overlap causes ambiguity in both retrieval and final tool choice,
+          while long tool lists force models to reason over noisy context.
+        </p>
+        <p>
+          ToolScope targets both bottlenecks jointly. It first consolidates overlapping tools with automated merge validation, then applies
+          context-aware retrieval to pass only the most relevant tools to the agent. This combination improves selection quality while keeping
+          the prompt compact enough for real-world inference constraints.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top: 0.25rem;">
+    <div class="container is-max-desktop">
+      <div class="has-text-centered">
+        <img src="static/images/toolscope-architecture.png" alt="Overview of ToolScope Architecture Diagram" style="width: 100%; height: auto; border-radius: 8px; border: 1px solid #dbe3ef;" />
+        <p style="margin-top: 0.7rem; color: #5f6b7a; font-style: italic;">Figure 1. Overview of ToolScope Architecture Diagram</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="section-card content">
+        <h2 class="title is-3">Method</h2>
+        <p>
+          Following Section 3 of the paper, ToolScope contains two core modules: <strong>ToolScopeMerger</strong> and
+          <strong>ToolScopeRetriever</strong>. The merger resolves semantic overlap in large toolsets, and the retriever selects compact,
+          query-relevant top-k tools for downstream agent selection.
+        </p>
+
+        <div class="method-subsection">
+          <h3 class="title is-5">3.1 Overview of ToolScope</h3>
+          <p>
+            ToolScope is designed around two bottlenecks in LLM agent tool use: overlapping tools and input context limits.
+            The workflow first merges redundant tools into a cleaner toolset, then performs hybrid retrieval and reranking so
+            only the most relevant tools are passed into the model context.
+          </p>
+        </div>
+
+        <div class="method-subsection">
+          <h3 class="title is-5">3.2 ToolScopeMerger (Graph-Based Consolidation)</h3>
+          <p>
+            ToolScopeMerger is organized into three stages:
+            <strong>S1 Candidate Generation</strong> (tool indexing),
+            <strong>S2 Relationship Classification & Graph Formation</strong>,
+            and <strong>S3 Consolidation & Auto-Correction</strong>.
+          </p>
+          <p>
+            Given toolset <code>T = {t1, t2, ..., tn}</code>, each tool description is embedded, nearest candidates are retrieved by cosine
+            similarity, and an LLM-based binary classifier decides whether a tool pair is semantically equivalent.
+            Edges between equivalent tools define an undirected graph; connected components form merge clusters.
+          </p>
+          <p>
+            A representative tool is selected per cluster to form the pruned toolset <code>T'</code>. Auto-Correction then validates each
+            proposed cluster, splitting or removing tools when semantic equivalence fails, ensuring a reliable one-to-one mapping
+            from original tools to merged tools for dataset relabeling.
+          </p>
+        </div>
+
+        <div class="method-subsection">
+          <h3 class="title is-5">3.3 ToolScopeRetriever (Hybrid Retrieval for Single- and Multi-Tool)</h3>
+          <p>
+            For single-tool queries, ToolScopeRetriever computes a weighted hybrid score combining dense and sparse retrieval,
+            then reranks top candidates with a cross-encoder:
+          </p>
+          <div class="equation-line">s(q, t) = α · s_dense(q, t) + (1 - α) · s_sparse(q, t)</div>
+          <p style="margin-top: 0.75rem;">
+            For multi-tool queries, each subquery is retrieved and reranked independently. Top-1 tools from each subquery are kept,
+            and remaining candidates are globally ranked by normalized reranker scores:
+          </p>
+          <div class="equation-line">s_norm(t(j)) = (s(t(j)) - s_min) / (s_max - s_min + ε)</div>
+          <p style="margin-top: 0.75rem;">
+            The final top-k set is constructed by including all subquery top-1 tools first, then adding highest normalized candidates
+            until k tools are selected.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="section-card content">
+        <h2 class="title is-3">Experiments</h2>
+
+        <h3 class="title is-4">Main Results</h3>
+        <p>
+          ToolScope achieves the best CSR@k across all three evaluated LLMs (GPT-4o, LLaMA-3.3-70B, and Command-R-08-2024)
+          on Seal-Tools, BFCL, and UltraTool. Following the paper, the largest gains are observed on the more challenging
+          tool-heavy settings: <strong>+34.6%</strong> on Seal-Tools and <strong>+38.6%</strong> on UltraTool, with stable improvement on BFCL
+          (<strong>+8.8%</strong>).
+        </p>
+        <p>
+          Improvements are robust across different k values, and ToolScope+AutoCorrect consistently outperforms BM25 and dense-only
+          retrieval. This pattern matches the paper's analysis that automatic merge correction is most beneficial when tool overlap and
+          ambiguity are high.
+        </p>
+
+        <div class="has-text-centered" style="margin-top: 0.4rem; margin-left: -0.35rem; margin-right: -0.35rem;">
+          <img src="static/images/table-1-csr.png" alt="Table 1 Correct Selection Rate (CSR@k) for each method and LLM" style="width: 100%; max-width: none; height: auto; border: 1px solid #dbe3ef; border-radius: 6px;" />
+        </div>
+        <p style="margin-top: 0.6rem; color: #5f6b7a; font-style: italic;">
+          Table 1: Correct Selection Rate (CSR@k) for each method and LLM.
+        </p>
+
+        <h3 class="title is-4">Additional Experimental Details</h3>
+        <p style="margin-bottom: 1.4rem;">
+          Our paper provides comprehensive experimental analysis beyond the results presented above.
+          For detailed information on the following aspects, we refer readers to the full paper:
+        </p>
+        <div style="background: linear-gradient(to right, #f8f9fa 0%, #ffffff 100%); border: 1px solid #e1e4e8; padding: 1.45rem; margin: 1rem 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+          <div class="columns is-multiline" style="margin-bottom: 0;">
+            <div class="column is-6" style="padding-bottom: 0.5rem;">
+              <div style="display: flex; align-items: start; margin-bottom: 1rem;">
+                <div style="min-width: 8px; height: 8px; background: #3273dc; border-radius: 50%; margin-top: 0.5rem; margin-right: 0.8rem;"></div>
+                <div>
+                  <strong style="color: #2c3e50;">Ablation Studies:</strong>
+                  <p style="color: #555; margin-top: 0.25rem; line-height: 1.55;">
+                    Module-level ablations show ToolScopeMerger contributes the largest gains, while ToolScopeRetriever reranking helps most on larger and noisier tool corpora.
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; align-items: start;">
+                <div style="min-width: 8px; height: 8px; background: #3273dc; border-radius: 50%; margin-top: 0.5rem; margin-right: 0.8rem;"></div>
+                <div>
+                  <strong style="color: #2c3e50;">ToolScopeMerger Preserves Functionality:</strong>
+                  <p style="color: #555; margin-top: 0.25rem; line-height: 1.55;">
+                    Coverage remains high after merging, with 82–95% tool-call coverage (TCCR) and 80–96% capability coverage (UCC), supporting reliable consolidation.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="column is-6" style="padding-bottom: 0.5rem;">
+              <div style="display: flex; align-items: start; margin-bottom: 1rem;">
+                <div style="min-width: 8px; height: 8px; background: #3273dc; border-radius: 50%; margin-top: 0.5rem; margin-right: 0.8rem;"></div>
+                <div>
+                  <strong style="color: #2c3e50;">ToolScope Improves End-to-End Task Accuracy:</strong>
+                  <p style="color: #555; margin-top: 0.25rem; line-height: 1.55;">
+                    In end-to-end evaluation, improved tool selection transfers to downstream performance, substantially outperforming retrieval-only baselines.
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; align-items: start;">
+                <div style="min-width: 8px; height: 8px; background: #3273dc; border-radius: 50%; margin-top: 0.5rem; margin-right: 0.8rem;"></div>
+                <div>
+                  <strong style="color: #2c3e50;">Auto-Correction Enhances CSR Across Datasets:</strong>
+                  <p style="color: #555; margin-top: 0.25rem; line-height: 1.55;">
+                    Auto-Correction consistently refines merge quality, yielding additional CSR improvements, with strongest effects on high-overlap datasets.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="has-text-centered" style="margin-top: 1.2rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
+          <p style="margin-bottom: 0.8rem; color: #586069;">
+            For complete protocols, extended tables, and full analysis
+          </p>
+          <a href="https://arxiv.org/pdf/2510.20036.pdf" target="_blank" rel="noopener" class="button is-link is-medium" style="border-radius: 6px; padding-left: 1.6rem; padding-right: 1.6rem; box-shadow: 0 4px 12px rgba(50, 115, 220, 0.25);">
+            <span class="icon"><i class="fas fa-file-pdf"></i></span>
+            <span>Read Full Paper</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop">
+      <div class="section-card content">
+        <h2 class="title is-3">Citation</h2>
+        <p>If you find ToolScope useful for your research, please consider citing our paper:</p>
+        <button class="button is-small is-link is-light" onclick="copyBibTeX()" style="margin-bottom: 0.8rem;">Copy</button>
+        <pre><code>@misc{liu2026toolscopeenhancingllmagent,
+  title={ToolScope: Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering},
+  author={Marianne Menglin Liu and Daniel Garcia and Fjona Parllaku and Vikas Upadhyay and Syed Fahad Allam Shah and Dan Roth},
+  year={2026},
+  eprint={2510.20036},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL},
+  url={https://arxiv.org/abs/2510.20036}
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <footer class="has-text-centered">
+    This website is built from the
+    <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank" rel="noopener">Academic Project Page Template</a>.
+  </footer>
+  <script>
+    function copyBibTeX() {
+      const bib = `@misc{liu2026toolscopeenhancingllmagent,
+  title={ToolScope: Enhancing LLM Agent Tool Use through Tool Merging and Context-Aware Filtering},
+  author={Marianne Menglin Liu and Daniel Garcia and Fjona Parllaku and Vikas Upadhyay and Syed Fahad Allam Shah and Dan Roth},
+  year={2026},
+  eprint={2510.20036},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL},
+  url={https://arxiv.org/abs/2510.20036}
+}`;
+      navigator.clipboard.writeText(bib);
+    }
+  </script>
+</body>
+</html>
